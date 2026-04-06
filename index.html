@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>APK Sideloader v3</title>
+<title>APK Sideloader v4</title>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0a0a0a;color:#e0e0e0;padding:20px;max-width:800px;margin:0 auto}
@@ -29,83 +29,95 @@
   .log.show{display:block}
   .log-ok{color:#81c784}.log-warn{color:#ffb74d}.log-err{color:#e57373}.log-info{color:#64b5f6}
   .note{font-size:.75em;color:#777;margin-top:8px;line-height:1.4}
-  .sep{text-align:center;color:#555;font-size:.8em;margin:12px 0}
+  .pbar{width:100%;height:8px;background:#333;border-radius:4px;margin:8px 0;display:none}
+  .pbar.show{display:block}
+  .pfill{height:100%;background:#4fc3f7;border-radius:4px;width:0%;transition:width .3s}
+  .ptext{font-size:.75em;color:#888;margin-bottom:4px;display:none}
+  .ptext.show{display:block}
 </style>
 </head>
 <body>
 
-<h1>APK Sideloader v3</h1>
+<h1>APK Sideloader v4</h1>
 <p class="sub">비발디 브라우저 다운로드 차단 우회 — 폴스타2 AAOS</p>
 
 <!-- ===== 방법 1: Intent URI ===== -->
 <div class="m">
-  <h2>방법 1: Intent URI 직접 호출 <span class="tag t1">최우선</span></h2>
-  <p class="d">브라우저 다운로드를 거치지 않고 안드로이드 패키지 설치 화면을 직접 호출합니다</p>
+  <h2>방법 1: Intent URI <span class="tag t1">최우선</span></h2>
+  <p class="d">다운로드 없이 안드로이드 설치 화면 직접 호출 (네트워크 불필요)</p>
   <hr>
-  <input type="text" id="urlIntent" placeholder="APK URL (같은 GitHub Pages 도메인 또는 직접 링크)">
-  <button class="bp" onclick="intentA()">Intent 방식 A: VIEW + APK type</button>
-  <button class="bs" onclick="intentB()">Intent 방식 B: INSTALL_PACKAGE</button>
-  <button class="bs" onclick="intentC()">Intent 방식 C: scheme 분리</button>
-  <button class="bs" onclick="intentD()">Intent 방식 D: package installer</button>
-  <button class="bw" onclick="intentAll()">전부 순서대로 시도</button>
+  <input type="text" id="urlI" placeholder="APK URL">
+  <button class="bp" onclick="intentAll()">전부 순서대로 시도</button>
+  <button class="bs" onclick="intentA()">A: VIEW+type</button>
+  <button class="bs" onclick="intentB()">B: INSTALL_PACKAGE</button>
+  <button class="bs" onclick="intentC()">C: VIEW+category</button>
+  <button class="bs" onclick="intentD()">D: PackageInstaller</button>
   <div class="log" id="logI"></div>
   <div class="st" id="stI"></div>
-  <p class="note">비발디 주소창에 직접 붙여넣어도 됩니다. 아무 반응이 없으면 차단된 것.</p>
 </div>
 
 <!-- ===== 방법 2: iframe 우회 ===== -->
 <div class="m">
-  <h2>방법 2: iframe / 숨은 창 우회 <span class="tag t2">실험적</span></h2>
-  <p class="d">브라우저가 메인 윈도우의 다운로드만 감시할 경우, 숨겨진 iframe에서 다운로드를 시도합니다</p>
+  <h2>방법 2: iframe 우회 <span class="tag t2">실험적</span></h2>
+  <p class="d">숨겨진 iframe에서 다운로드 시도</p>
   <hr>
-  <input type="text" id="urlIframe" placeholder="APK URL (same-origin 권장)">
-  <button class="bp" onclick="iframeMethod()">iframe 다운로드 시도</button>
-  <button class="bs" onclick="iframeBlob()">iframe + Blob 조합</button>
+  <input type="text" id="urlF" placeholder="APK URL (same-origin 권장)">
+  <button class="bp" onclick="iframeMethod()">iframe 다운로드</button>
+  <button class="bs" onclick="iframeBlob()">iframe + Blob</button>
+  <div class="ptext" id="ptF">대기 중</div>
+  <div class="pbar" id="pbF"><div class="pfill" id="pfF"></div></div>
   <div class="log" id="logF"></div>
   <div class="st" id="stF"></div>
 </div>
 
 <!-- ===== 방법 3: MIME 위장 ===== -->
 <div class="m">
-  <h2>방법 3: MIME 타입 위장 <span class="tag t2">실험적</span></h2>
-  <p class="d">APK를 일반 파일(octet-stream, zip)로 위장하여 다운로드 필터를 우회합니다</p>
+  <h2>방법 3: MIME 위장 <span class="tag t2">실험적</span></h2>
+  <p class="d">APK를 .zip/.bin/.txt로 위장하여 다운로드 필터 우회</p>
   <hr>
-  <input type="text" id="urlMime" placeholder="APK URL (same-origin 권장)">
+  <input type="text" id="urlM" placeholder="APK URL (same-origin 권장)">
   <button class="bp" onclick="mimeTrick()">MIME 위장 다운로드</button>
+  <div class="ptext" id="ptM">대기 중</div>
+  <div class="pbar" id="pbM"><div class="pfill" id="pfM"></div></div>
   <div class="log" id="logM"></div>
   <div class="st" id="stM"></div>
 </div>
 
-<!-- ===== 방법 4: Blob → data URI ===== -->
+<!-- ===== 방법 4: Data URI ===== -->
 <div class="m">
-  <h2>방법 4: Data URI 직접 이동 <span class="tag t2">실험적</span></h2>
-  <p class="d">다운로드 트리거 대신 data: URI로 직접 이동하여 브라우저가 파일을 처리하게 합니다</p>
+  <h2>방법 4: Data URI 이동 <span class="tag t2">실험적</span></h2>
+  <p class="d">다운로드 대신 data: URI로 직접 이동 (5MB 이하 권장)</p>
   <hr>
-  <input type="text" id="urlData" placeholder="APK URL (same-origin 권장)">
-  <button class="bp" onclick="dataUriMethod()">Data URI 변환 후 이동</button>
+  <input type="text" id="urlD" placeholder="APK URL (same-origin 권장)">
+  <button class="bp" onclick="dataUri()">Data URI 시도</button>
+  <div class="ptext" id="ptD">대기 중</div>
+  <div class="pbar" id="pbD"><div class="pfill" id="pfD"></div></div>
   <div class="log" id="logD"></div>
   <div class="st" id="stD"></div>
-  <p class="note">소형 APK만 가능 (~5MB 이하). 큰 파일은 브라우저가 멈출 수 있음.</p>
 </div>
 
-<!-- ===== 방법 5: Web Share API ===== -->
+<!-- ===== 방법 5: Web Share ===== -->
 <div class="m">
-  <h2>방법 5: Web Share API <span class="tag t3">롱샷</span></h2>
-  <p class="d">파일을 "공유" 기능으로 보내면 AAOS 시스템이 파일 관리자나 설치 프로그램으로 넘길 수 있습니다</p>
+  <h2>방법 5: Web Share <span class="tag t3">롱샷</span></h2>
+  <p class="d">파일을 "공유"하여 시스템이 설치 프로그램으로 넘기도록 유도</p>
   <hr>
-  <input type="text" id="urlShare" placeholder="APK URL (same-origin 권장)">
-  <button class="bp" onclick="webShareMethod()">Web Share로 공유 시도</button>
+  <input type="text" id="urlS" placeholder="APK URL (same-origin 권장)">
+  <button class="bp" onclick="webShare()">Web Share 시도</button>
+  <div class="ptext" id="ptS">대기 중</div>
+  <div class="pbar" id="pbS"><div class="pfill" id="pfS"></div></div>
   <div class="log" id="logS"></div>
   <div class="st" id="stS"></div>
 </div>
 
-<!-- ===== 방법 6: Service Worker 인터셉트 ===== -->
+<!-- ===== 방법 6: SW 인터셉트 ===== -->
 <div class="m">
-  <h2>방법 6: SW 인터셉트 → 위장 응답 <span class="tag t3">롱샷</span></h2>
-  <p class="d">Service Worker가 요청을 가로채서 일반 웹페이지인 것처럼 위장한 뒤 APK 바이너리를 전달합니다</p>
+  <h2>방법 6: Cache + 위장 <span class="tag t3">롱샷</span></h2>
+  <p class="d">Cache API로 저장 후 위장된 경로로 접근</p>
   <hr>
-  <input type="text" id="urlSW" placeholder="APK URL (same-origin 권장)">
-  <button class="bp" onclick="swIntercept()">SW 등록 + 위장 다운로드</button>
+  <input type="text" id="urlW" placeholder="APK URL (same-origin 권장)">
+  <button class="bp" onclick="swIntercept()">Cache 저장 + 위장</button>
+  <div class="ptext" id="ptW">대기 중</div>
+  <div class="pbar" id="pbW"><div class="pfill" id="pfW"></div></div>
   <div class="log" id="logW"></div>
   <div class="st" id="stW"></div>
 </div>
@@ -118,301 +130,315 @@
   <div class="log" id="logDiag"></div>
 </div>
 
-<iframe id="hiddenFrame" style="display:none" sandbox="allow-downloads allow-same-origin allow-scripts"></iframe>
+<iframe id="hf" style="display:none" sandbox="allow-downloads allow-same-origin allow-scripts"></iframe>
 
 <script>
-// ===== 유틸 =====
 function $(id){return document.getElementById(id)}
 function ss(el,msg,t){el.textContent=msg;el.className='st show '+t}
 function al(el,msg,t){el.classList.add('show');var d=document.createElement('div');d.className='log-'+(t||'info');d.textContent=(t==='ok'?'✓ ':t==='err'?'✗ ':t==='warn'?'⚠ ':'→ ')+msg;el.appendChild(d);el.scrollTop=el.scrollHeight}
 function cl(el){el.innerHTML='';el.classList.add('show')}
 function fb(b){return b<1024?b+' B':b<1048576?(b/1024).toFixed(1)+' KB':(b/1048576).toFixed(1)+' MB'}
 
-// ===== 방법 1: Intent URI =====
-function buildIntents(url) {
-  var clean = url.replace(/^https?:\/\//,'');
-  return [
-    {name:'A: VIEW + APK type', uri:'intent://'+clean+'#Intent;scheme=https;type=application/vnd.android.package-archive;end'},
-    {name:'B: INSTALL_PACKAGE', uri:'intent://'+clean+'#Intent;scheme=https;action=android.intent.action.INSTALL_PACKAGE;end'},
-    {name:'C: VIEW + category', uri:'intent://'+clean+'#Intent;scheme=https;action=android.intent.action.VIEW;type=application/vnd.android.package-archive;category=android.intent.category.DEFAULT;end'},
-    {name:'D: Package Installer 직접', uri:'intent://'+clean+'#Intent;scheme=https;action=android.intent.action.INSTALL_PACKAGE;component=com.android.packageinstaller/.InstallStaging;end'},
+// ===== 프로그레스 fetch =====
+async function fetchWithProgress(url, ptId, pbId, pfId, log) {
+  var pt=$(ptId), pb=$(pbId), pf=$(pfId);
+  pt.classList.add('show'); pb.classList.add('show');
+  pt.textContent='연결 중...';
+  pf.style.width='0%';
+
+  var startTime=Date.now();
+
+  al(log,'fetch 시작: '+url,'info');
+
+  var response;
+  try {
+    response = await fetch(url);
+  } catch(e) {
+    pt.textContent='연결 실패';
+    al(log,'fetch 실패: '+e.message,'err');
+    throw e;
+  }
+
+  if(!response.ok) {
+    pt.textContent='HTTP 에러 '+response.status;
+    al(log,'HTTP '+response.status+' '+response.statusText,'err');
+    throw new Error('HTTP '+response.status);
+  }
+
+  var ct=response.headers.get('Content-Type')||'unknown';
+  var total=parseInt(response.headers.get('Content-Length')||'0');
+  al(log,'응답: '+response.status+', Content-Type: '+ct+', 크기: '+(total?fb(total):'알 수 없음'),'info');
+
+  if(!response.body||!response.body.getReader) {
+    // getReader 미지원 시 통째로 받기
+    al(log,'스트리밍 미지원, 통째로 수신 중...','warn');
+    pt.textContent='수신 중... (진행률 표시 불가)';
+    pf.style.width='50%';
+    var blob=await response.blob();
+    pf.style.width='100%';
+    var elapsed=((Date.now()-startTime)/1000).toFixed(1);
+    pt.textContent='완료: '+fb(blob.size)+' ('+elapsed+'초)';
+    al(log,'수신 완료: '+fb(blob.size)+' ('+elapsed+'초)','ok');
+    return blob;
+  }
+
+  var reader=response.body.getReader();
+  var received=0;
+  var chunks=[];
+  var lastUpdate=Date.now();
+
+  while(true) {
+    var result=await reader.read();
+    if(result.done) break;
+    chunks.push(result.value);
+    received+=result.value.length;
+
+    var now=Date.now();
+    if(now-lastUpdate>500||result.done) { // 0.5초마다 업데이트
+      lastUpdate=now;
+      var elapsed=((now-startTime)/1000).toFixed(1);
+      var speed=received/(now-startTime)*1000;
+
+      if(total>0) {
+        var pct=Math.round(received/total*100);
+        pf.style.width=pct+'%';
+        var remaining=((total-received)/speed).toFixed(0);
+        pt.textContent=fb(received)+' / '+fb(total)+' ('+pct+'%) — '+fb(speed)+'/s — 남은 시간: ~'+remaining+'초';
+      } else {
+        pf.style.width='50%';
+        pt.textContent=fb(received)+' 수신 중... ('+elapsed+'초, '+fb(speed)+'/s)';
+      }
+    }
+  }
+
+  var elapsed2=((Date.now()-startTime)/1000).toFixed(1);
+  pf.style.width='100%';
+  pt.textContent='완료: '+fb(received)+' ('+elapsed2+'초)';
+  al(log,'수신 완료: '+fb(received)+' ('+elapsed2+'초)','ok');
+
+  return new Blob(chunks);
+}
+
+// ===== APK 검증 =====
+function verifyAPK(blob, log) {
+  return new Promise(function(resolve) {
+    var reader=new FileReader();
+    reader.onload=function(){
+      var arr=new Uint8Array(reader.result);
+      var magic=Array.from(arr.slice(0,4)).map(function(b){return b.toString(16).padStart(2,'0')}).join(' ');
+      var isAPK=(arr[0]===0x50&&arr[1]===0x4B&&arr[2]===0x03&&arr[3]===0x04);
+      al(log,'매직 바이트: '+magic+(isAPK?' ✅ APK 확인':' ❌ APK 아님!'),isAPK?'ok':'err');
+      if(!isAPK){
+        try{
+          var preview=new TextDecoder().decode(arr.slice(0,200));
+          al(log,'내용: '+preview.substring(0,150)+'...','warn');
+        }catch(e){}
+      }
+      resolve(isAPK);
+    };
+    reader.readAsArrayBuffer(blob.slice(0,200));
+  });
+}
+
+// ===== Intent =====
+function mkIntents(u){
+  var c=u.replace(/^https?:\/\//,'');
+  return[
+    {n:'A: VIEW+type',u:'intent://'+c+'#Intent;scheme=https;type=application/vnd.android.package-archive;end'},
+    {n:'B: INSTALL_PACKAGE',u:'intent://'+c+'#Intent;scheme=https;action=android.intent.action.INSTALL_PACKAGE;end'},
+    {n:'C: VIEW+category',u:'intent://'+c+'#Intent;scheme=https;action=android.intent.action.VIEW;type=application/vnd.android.package-archive;category=android.intent.category.DEFAULT;end'},
+    {n:'D: PackageInstaller',u:'intent://'+c+'#Intent;scheme=https;action=android.intent.action.INSTALL_PACKAGE;component=com.android.packageinstaller/.InstallStaging;end'},
   ];
 }
-
-function tryOneIntent(uri,name,log){
-  al(log,name+': '+uri,'info');
-  try{window.location.href=uri;al(log,'호출됨 — 3초 대기','ok')}
-  catch(e){al(log,'실패: '+e.message,'err')}
-}
-
-function intentA(){var u=$('urlIntent').value.trim(),l=$('logI');cl(l);if(!u)return;var i=buildIntents(u);tryOneIntent(i[0].uri,i[0].name,l)}
-function intentB(){var u=$('urlIntent').value.trim(),l=$('logI');cl(l);if(!u)return;var i=buildIntents(u);tryOneIntent(i[1].uri,i[1].name,l)}
-function intentC(){var u=$('urlIntent').value.trim(),l=$('logI');cl(l);if(!u)return;var i=buildIntents(u);tryOneIntent(i[2].uri,i[2].name,l)}
-function intentD(){var u=$('urlIntent').value.trim(),l=$('logI');cl(l);if(!u)return;var i=buildIntents(u);tryOneIntent(i[3].uri,i[3].name,l)}
-
+function tryI(uri,name,log){al(log,name,'info');al(log,uri,'info');try{window.location.href=uri;al(log,'호출됨 — 반응 대기','ok')}catch(e){al(log,'실패: '+e.message,'err')}}
+function intentA(){var u=$('urlI').value.trim(),l=$('logI');cl(l);if(!u)return;var i=mkIntents(u);tryI(i[0].u,i[0].n,l)}
+function intentB(){var u=$('urlI').value.trim(),l=$('logI');cl(l);if(!u)return;var i=mkIntents(u);tryI(i[1].u,i[1].n,l)}
+function intentC(){var u=$('urlI').value.trim(),l=$('logI');cl(l);if(!u)return;var i=mkIntents(u);tryI(i[2].u,i[2].n,l)}
+function intentD(){var u=$('urlI').value.trim(),l=$('logI');cl(l);if(!u)return;var i=mkIntents(u);tryI(i[3].u,i[3].n,l)}
 function intentAll(){
-  var u=$('urlIntent').value.trim(),l=$('logI'),s=$('stI');
-  cl(l);if(!u){ss(s,'URL을 입력하세요','err');return}
-  var intents=buildIntents(u);
+  var u=$('urlI').value.trim(),l=$('logI'),s=$('stI');
+  cl(l);if(!u){ss(s,'URL 입력','err');return}
+  var its=mkIntents(u);
   ss(s,'⏳ 순서대로 시도 중...','info');
-  intents.forEach(function(item,i){
-    setTimeout(function(){tryOneIntent(item.uri,item.name,l)},i*3500);
-  });
-  setTimeout(function(){ss(s,'✅ 전부 시도 완료. 설치 화면이 안 떴으면 Intent가 차단된 것.','ok')},intents.length*3500);
+  its.forEach(function(item,i){setTimeout(function(){tryI(item.u,item.n,l)},i*3500)});
+  setTimeout(function(){ss(s,'✅ 전부 완료. 아무 반응 없으면 intent: 스킴이 차단된 것.','ok')},its.length*3500+500);
 }
 
-// ===== 방법 2: iframe 우회 =====
+// ===== iframe =====
 function iframeMethod(){
-  var u=$('urlIframe').value.trim(),l=$('logF'),s=$('stF');
+  var u=$('urlF').value.trim(),l=$('logF'),s=$('stF');
   cl(l);if(!u){ss(s,'URL 입력','err');return}
-
-  al(l,'방식 A: 숨겨진 iframe src 설정','info');
-  try{
-    var f=$('hiddenFrame');
-    f.src=u;
-    al(l,'iframe src 설정됨','ok');
-  }catch(e){al(l,'실패: '+e.message,'err')}
-
-  setTimeout(function(){
-    al(l,'방식 B: 동적 iframe 생성','info');
-    try{
-      var f2=document.createElement('iframe');
-      f2.style.display='none';
-      f2.src=u;
-      document.body.appendChild(f2);
-      al(l,'동적 iframe 삽입됨','ok');
-    }catch(e){al(l,'실패: '+e.message,'err')}
-  },2000);
-
-  setTimeout(function(){
-    al(l,'방식 C: window.open','info');
-    try{
-      var w=window.open(u,'_blank');
-      al(l,'window.open: '+(w?'열림':'차단됨'),w?'ok':'warn');
-    }catch(e){al(l,'실패: '+e.message,'err')}
-  },4000);
-
-  ss(s,'✅ 3가지 방식 시도 완료','ok');
+  al(l,'A: iframe.src = URL','info');
+  $('hf').src=u;al(l,'설정됨','ok');
+  setTimeout(function(){al(l,'B: 동적 iframe','info');var f=document.createElement('iframe');f.style.display='none';f.src=u;document.body.appendChild(f);al(l,'삽입됨','ok')},2000);
+  setTimeout(function(){al(l,'C: window.open','info');var w=window.open(u,'_blank');al(l,w?'열림':'차단됨',w?'ok':'warn')},4000);
+  ss(s,'✅ 시도 완료','ok');
 }
 
 async function iframeBlob(){
-  var u=$('urlIframe').value.trim(),l=$('logF'),s=$('stF');
+  var u=$('urlF').value.trim(),l=$('logF'),s=$('stF');
   cl(l);if(!u){ss(s,'URL 입력','err');return}
-
-  al(l,'same-origin fetch 시도...','info');
   try{
-    var r=await fetch(u);
-    var blob=await r.blob();
-    al(l,'수신: '+fb(blob.size),'ok');
-
-    var blobUrl=URL.createObjectURL(new Blob([blob],{type:'application/octet-stream'}));
-
-    al(l,'iframe에 blob URL 설정','info');
-    var f=document.createElement('iframe');
-    f.style.display='none';
-    f.src=blobUrl;
-    document.body.appendChild(f);
-    al(l,'iframe blob 설정됨','ok');
-
-    setTimeout(function(){
-      al(l,'window.open(blob)','info');
-      window.open(blobUrl,'_blank');
-    },2000);
-
+    var blob=await fetchWithProgress(u,'ptF','pbF','pfF',l);
+    var burl=URL.createObjectURL(new Blob([blob],{type:'application/octet-stream'}));
+    al(l,'iframe에 blob 로드','info');
+    var f=document.createElement('iframe');f.style.display='none';f.src=burl;document.body.appendChild(f);
+    setTimeout(function(){window.open(burl,'_blank')},2000);
     ss(s,'✅ blob iframe 시도 완료','ok');
-  }catch(e){
-    al(l,'fetch 실패: '+e.message,'err');
-    ss(s,'❌ '+e.message,'err');
-  }
+  }catch(e){ss(s,'❌ '+e.message,'err')}
 }
 
-// ===== 방법 3: MIME 위장 =====
+// ===== MIME 위장 =====
 async function mimeTrick(){
-  var u=$('urlMime').value.trim(),l=$('logM'),s=$('stM');
+  var u=$('urlM').value.trim(),l=$('logM'),s=$('stM');
   cl(l);if(!u){ss(s,'URL 입력','err');return}
-
-  al(l,'fetch 시도...','info');
   try{
-    var r=await fetch(u);
-    var blob=await r.blob();
-    al(l,'원본 수신: '+fb(blob.size)+' (type: '+blob.type+')','ok');
+    var blob=await fetchWithProgress(u,'ptM','pbM','pfM',l);
+    var isAPK=await verifyAPK(blob,l);
+    if(!isAPK){ss(s,'⚠️ APK가 아닌 파일','err');return}
 
-    // 다양한 MIME으로 위장
     var mimes=[
-      'application/octet-stream',
-      'application/zip',
-      'application/x-compressed',
-      'binary/octet-stream',
-      'text/plain',
+      {mime:'application/octet-stream',ext:'.bin'},
+      {mime:'application/zip',ext:'.zip'},
+      {mime:'application/x-compressed',ext:'.gz'},
+      {mime:'binary/octet-stream',ext:'.dat'},
+      {mime:'text/plain',ext:'.txt'},
     ];
-
-    mimes.forEach(function(mime,i){
+    mimes.forEach(function(m,i){
       setTimeout(function(){
-        al(l,'시도 '+(i+1)+': MIME = '+mime,'info');
-        var disguised=new Blob([blob],{type:mime});
-        var burl=URL.createObjectURL(disguised);
-        var ext=(mime==='application/zip'?'.zip':mime==='text/plain'?'.txt':'.bin');
-
-        // <a download>
-        var a=document.createElement('a');
-        a.href=burl;
-        a.download='app'+ext;
-        a.style.display='none';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        al(l,'<a download="app'+ext+'"> 클릭됨','ok');
-      },i*2000);
+        al(l,'시도 '+(i+1)+'/'+mimes.length+': '+m.mime+' → app'+m.ext,'info');
+        var d=new Blob([blob],{type:m.mime});
+        var bu=URL.createObjectURL(d);
+        var a=document.createElement('a');a.href=bu;a.download='app'+m.ext;a.style.display='none';
+        document.body.appendChild(a);a.click();document.body.removeChild(a);
+        al(log,'트리거됨. 팝업 확인','ok');
+      },i*2500);
     });
-
-    setTimeout(function(){ss(s,'✅ 5가지 MIME 시도 완료','ok')},mimes.length*2000);
-  }catch(e){
-    al(l,'fetch 실패: '+e.message,'err');
-    ss(s,'❌ '+e.message,'err');
-  }
+    setTimeout(function(){ss(s,'✅ 5가지 MIME 시도 완료','ok')},mimes.length*2500);
+  }catch(e){ss(s,'❌ '+e.message,'err')}
 }
 
-// ===== 방법 4: Data URI =====
-async function dataUriMethod(){
-  var u=$('urlData').value.trim(),l=$('logD'),s=$('stD');
+// ===== Data URI =====
+async function dataUri(){
+  var u=$('urlD').value.trim(),l=$('logD'),s=$('stD');
   cl(l);if(!u){ss(s,'URL 입력','err');return}
-
-  al(l,'fetch 시도...','info');
   try{
-    var r=await fetch(u);
-    var blob=await r.blob();
-    al(l,'수신: '+fb(blob.size),'ok');
+    var blob=await fetchWithProgress(u,'ptD','pbD','pfD',l);
+    var isAPK=await verifyAPK(blob,l);
 
-    if(blob.size>5*1024*1024){
-      al(l,'⚠️ 파일이 5MB 초과. 브라우저가 멈출 수 있음','warn');
-    }
-
-    al(l,'ArrayBuffer → base64 변환 중...','info');
-    var arrBuf=await blob.arrayBuffer();
-    var bytes=new Uint8Array(arrBuf);
+    al(l,'base64 변환 중...','info');
+    var arr=await blob.arrayBuffer();
+    var bytes=new Uint8Array(arr);
+    var chunk=8192;
     var binary='';
-    for(var i=0;i<bytes.length;i++){binary+=String.fromCharCode(bytes[i])}
+    for(var i=0;i<bytes.length;i+=chunk){
+      var slice=bytes.subarray(i,Math.min(i+chunk,bytes.length));
+      binary+=String.fromCharCode.apply(null,slice);
+      if(i%81920===0) al(l,'변환 중: '+fb(i)+' / '+fb(bytes.length),'info');
+    }
     var b64=btoa(binary);
-    al(l,'base64 변환 완료: '+fb(b64.length)+' 문자','ok');
+    al(l,'base64 완료: '+fb(b64.length)+' 문자','ok');
 
-    // data URI 여러 타입 시도
-    var types=[
-      'application/vnd.android.package-archive',
-      'application/octet-stream',
-      'application/zip',
-    ];
-
+    var types=['application/vnd.android.package-archive','application/octet-stream','application/zip'];
     types.forEach(function(t,i){
       setTimeout(function(){
         al(l,'data:'+t+' 이동 시도','info');
-        try{
-          window.location.href='data:'+t+';base64,'+b64;
-          al(l,'이동 시도됨','ok');
-        }catch(e){al(l,'실패: '+e.message,'err')}
+        try{window.location.href='data:'+t+';base64,'+b64;al(l,'이동됨','ok')}
+        catch(e){al(l,'실패: '+e.message,'err')}
       },i*3000);
     });
-
-    ss(s,'✅ data URI 시도 중...','ok');
-  }catch(e){
-    al(l,'실패: '+e.message,'err');
-    ss(s,'❌ '+e.message,'err');
-  }
+    ss(s,'✅ data URI 시도 중','ok');
+  }catch(e){ss(s,'❌ '+e.message,'err')}
 }
 
-// ===== 방법 5: Web Share =====
-async function webShareMethod(){
-  var u=$('urlShare').value.trim(),l=$('logS'),s=$('stS');
+// ===== Web Share =====
+async function webShare(){
+  var u=$('urlS').value.trim(),l=$('logS'),s=$('stS');
   cl(l);if(!u){ss(s,'URL 입력','err');return}
 
-  if(!navigator.share&&!navigator.canShare){
-    al(l,'Web Share API 미지원','err');
-    ss(s,'❌ 이 브라우저는 Web Share를 지원하지 않음','err');
-    return;
-  }
+  if(!navigator.share){al(l,'Web Share API 미지원','err');ss(s,'❌ 미지원','err');return}
 
-  al(l,'fetch 시도...','info');
   try{
-    var r=await fetch(u);
-    var blob=await r.blob();
-    al(l,'수신: '+fb(blob.size),'ok');
+    var blob=await fetchWithProgress(u,'ptS','pbS','pfS',l);
 
-    var file=new File([blob],'app.apk',{type:'application/vnd.android.package-archive'});
-    al(l,'File 객체 생성됨','ok');
+    // 여러 파일명/MIME 시도
+    var attempts=[
+      {name:'app.apk',type:'application/vnd.android.package-archive'},
+      {name:'app.zip',type:'application/zip'},
+      {name:'app.bin',type:'application/octet-stream'},
+    ];
 
-    if(navigator.canShare&&navigator.canShare({files:[file]})){
-      al(l,'canShare: ✅ 공유 가능','ok');
-      await navigator.share({files:[file],title:'APK Install',text:'Install this APK'});
-      al(l,'공유 완료!','ok');
-      ss(s,'✅ 공유 다이얼로그가 열렸습니다','ok');
-    }else{
-      al(l,'canShare: ❌ 이 파일 타입은 공유 불가','warn');
-      // 파일명 위장 시도
-      al(l,'zip 위장으로 재시도...','info');
-      var file2=new File([blob],'app.zip',{type:'application/zip'});
-      if(navigator.canShare&&navigator.canShare({files:[file2]})){
-        await navigator.share({files:[file2],title:'APK',text:'Install'});
-        al(l,'zip 위장 공유 완료','ok');
-      }else{
-        al(l,'zip 위장도 불가','err');
-        ss(s,'❌ 공유 불가','err');
-      }
+    for(var i=0;i<attempts.length;i++){
+      var a=attempts[i];
+      al(l,'공유 시도 '+(i+1)+': '+a.name+' ('+a.type+')','info');
+      try{
+        var file=new File([blob],a.name,{type:a.type});
+        if(navigator.canShare&&navigator.canShare({files:[file]})){
+          al(l,'canShare ✅','ok');
+          await navigator.share({files:[file],title:'Install'});
+          al(l,'공유 성공!','ok');
+          ss(s,'✅ 공유됨!','ok');
+          return;
+        }else{
+          al(l,'canShare ❌ 이 형식 불가','warn');
+        }
+      }catch(e){al(l,'실패: '+e.message,'err')}
     }
-  }catch(e){
-    al(l,'실패: '+e.message,'err');
-    ss(s,'❌ '+e.message,'err');
-  }
+    ss(s,'❌ 모든 형식 공유 불가','err');
+  }catch(e){ss(s,'❌ '+e.message,'err')}
 }
 
-// ===== 방법 6: Service Worker 인터셉트 =====
+// ===== Cache 위장 =====
 async function swIntercept(){
-  var u=$('urlSW').value.trim(),l=$('logW'),s=$('stW');
+  var u=$('urlW').value.trim(),l=$('logW'),s=$('stW');
   cl(l);if(!u){ss(s,'URL 입력','err');return}
+  if(!('caches' in window)){al(l,'Cache API 미지원','err');ss(s,'❌','err');return}
 
-  if(!('serviceWorker' in navigator)){
-    al(l,'Service Worker 미지원','err');
-    ss(s,'❌ SW 미지원','err');
-    return;
-  }
-
-  al(l,'fetch로 APK 다운로드...','info');
   try{
-    var r=await fetch(u);
-    var blob=await r.blob();
-    al(l,'수신: '+fb(blob.size),'ok');
+    var blob=await fetchWithProgress(u,'ptW','pbW','pfW',l);
+    var isAPK=await verifyAPK(blob,l);
 
-    // Cache에 저장
-    var cache=await caches.open('sw-apk-v3');
-    await cache.put('/disguised-page.html',new Response(blob,{
-      headers:{
-        'Content-Type':'application/vnd.android.package-archive',
-        'Content-Disposition':'attachment; filename="app.apk"'
-      }
-    }));
-    al(l,'캐시에 위장 저장 완료','ok');
+    var cache=await caches.open('sw-v4');
 
-    // SW 대신 직접 캐시에서 꺼내서 이동
-    al(l,'캐시에서 blob URL 생성 후 이동','info');
-    var cached=await cache.match('/disguised-page.html');
-    var cachedBlob=await cached.blob();
-    var burl=URL.createObjectURL(cachedBlob);
+    // 여러 MIME으로 캐시에 저장 후 각각 시도
+    var types=[
+      {mime:'application/octet-stream',path:'/get-file.bin'},
+      {mime:'application/zip',path:'/get-file.zip'},
+      {mime:'text/html',path:'/get-file.html'},
+    ];
 
-    // iframe으로 시도
-    var f=document.createElement('iframe');
-    f.style.display='none';
-    f.src=burl;
-    document.body.appendChild(f);
-    al(l,'iframe에 캐시 blob 로드','ok');
+    for(var i=0;i<types.length;i++){
+      var t=types[i];
+      al(l,'캐시 저장: '+t.path+' ('+t.mime+')','info');
+      await cache.put(t.path,new Response(blob,{
+        headers:{'Content-Type':t.mime,'Content-Disposition':'attachment; filename="app.apk"'}
+      }));
+    }
+    al(l,'캐시 저장 완료','ok');
 
-    setTimeout(function(){
-      al(l,'location.href로 이동 시도','info');
-      window.location.href=burl;
-    },2000);
+    // 캐시에서 꺼내서 blob으로 시도
+    for(var j=0;j<types.length;j++){
+      var t2=types[j];
+      al(l,'캐시 →  blob → 시도: '+t2.mime,'info');
+      var cached=await cache.match(t2.path);
+      var cblob=await cached.blob();
+      var burl=URL.createObjectURL(cblob);
 
-    ss(s,'✅ 시도 완료','ok');
-  }catch(e){
-    al(l,'실패: '+e.message,'err');
-    ss(s,'❌ '+e.message,'err');
-  }
+      var a=document.createElement('a');a.href=burl;a.download='app'+t2.path.substring(t2.path.lastIndexOf('.'));
+      a.style.display='none';document.body.appendChild(a);a.click();document.body.removeChild(a);
+      al(l,'다운로드 트리거됨','ok');
+
+      await new Promise(function(r){setTimeout(r,1500)});
+    }
+
+    // 마지막: location.href로 이동
+    al(l,'location.href로 blob 이동 시도','info');
+    var last=await cache.match(types[0].path);
+    var lb=await last.blob();
+    window.location.href=URL.createObjectURL(lb);
+
+    ss(s,'✅ 모든 시도 완료','ok');
+  }catch(e){ss(s,'❌ '+e.message,'err')}
 }
 
 // ===== 진단 =====
@@ -422,66 +448,52 @@ async function runDiag(){
   al(l,'UA: '+navigator.userAgent,'info');
   al(l,'Platform: '+navigator.platform,'info');
 
-  var ck=[
-    ['Fetch API',typeof fetch!=='undefined'],
-    ['Blob',typeof Blob!=='undefined'],
-    ['URL.createObjectURL',!!URL.createObjectURL],
-    ['<a download>','download' in document.createElement('a')],
-    ['Service Worker','serviceWorker' in navigator],
-    ['Cache API','caches' in window],
-    ['Web Share',!!navigator.share],
-    ['canShare',!!(navigator.canShare)],
-    ['showSaveFilePicker','showSaveFilePicker' in window],
-    ['Web USB','usb' in navigator],
-    ['Web Bluetooth','bluetooth' in navigator],
-    ['Clipboard API','clipboard' in navigator],
-    ['intent: URI 지원','true (직접 테스트 필요)'],
+  [['Fetch',typeof fetch!=='undefined'],
+   ['Blob',typeof Blob!=='undefined'],
+   ['createObjectURL',!!URL.createObjectURL],
+   ['<a download>','download' in document.createElement('a')],
+   ['ReadableStream',typeof ReadableStream!=='undefined'],
+   ['Service Worker','serviceWorker' in navigator],
+   ['Cache API','caches' in window],
+   ['Web Share',!!navigator.share],
+   ['canShare',!!navigator.canShare],
+   ['showSaveFilePicker','showSaveFilePicker' in window],
+   ['Web USB','usb' in navigator],
+  ].forEach(function(c){al(l,c[0]+': '+(c[1]?'✅':'❌'),c[1]?'ok':'err')});
+
+  al(l,'','info');
+  al(l,'=== 다운로드 테스트 (MIME별) ===','info');
+
+  var testMimes=[
+    {mime:'text/plain',ext:'.txt',label:'text/plain'},
+    {mime:'application/octet-stream',ext:'.bin',label:'octet-stream'},
+    {mime:'application/zip',ext:'.zip',label:'application/zip'},
+    {mime:'image/png',ext:'.png',label:'image/png'},
+    {mime:'application/pdf',ext:'.pdf',label:'application/pdf'},
   ];
-  ck.forEach(function(c){
-    if(typeof c[1]==='string') al(l,c[0]+': '+c[1],'info');
-    else al(l,c[0]+': '+(c[1]?'✅':'❌'),c[1]?'ok':'err');
+
+  testMimes.forEach(function(tm,i){
+    setTimeout(function(){
+      al(l,'다운로드 테스트: '+tm.label+' → test'+tm.ext,'info');
+      try{
+        var b=new Blob(['TESTDATA_'+tm.label],{type:tm.mime});
+        var u=URL.createObjectURL(b);
+        var a=document.createElement('a');a.href=u;a.download='test'+tm.ext;
+        document.body.appendChild(a);a.click();document.body.removeChild(a);
+        al(l,tm.label+': 트리거됨 — "다운로드 비활성화" 팝업이 뜨는지 확인!','ok');
+      }catch(e){al(l,tm.label+': ❌ '+e.message,'err')}
+    },i*1500);
   });
 
-  al(l,'','info');
-  al(l,'=== Same-origin Fetch 테스트 ===','info');
-  try{
-    var t=await fetch(window.location.href);
-    al(l,'Same-origin fetch: ✅ '+t.status,'ok');
-  }catch(e){al(l,'Same-origin fetch: ❌ '+e.message,'err')}
-
-  al(l,'','info');
-  al(l,'=== Blob 다운로드 테스트 ===','info');
-
-  // 1. octet-stream
-  try{
-    var b1=new Blob(['TEST'],{type:'application/octet-stream'});
-    var u1=URL.createObjectURL(b1);
-    var a1=document.createElement('a');a1.href=u1;a1.download='test.bin';document.body.appendChild(a1);a1.click();document.body.removeChild(a1);
-    al(l,'octet-stream 다운로드: 트리거됨 (팝업 확인)','ok');
-  }catch(e){al(l,'octet-stream: ❌ '+e.message,'err')}
-
-  // 2. text/plain
   setTimeout(function(){
-    try{
-      var b2=new Blob(['TEST'],{type:'text/plain'});
-      var u2=URL.createObjectURL(b2);
-      var a2=document.createElement('a');a2.href=u2;a2.download='test.txt';document.body.appendChild(a2);a2.click();document.body.removeChild(a2);
-      al(l,'text/plain 다운로드: 트리거됨 (팝업 확인)','ok');
-    }catch(e){al(l,'text/plain: ❌ '+e.message,'err')}
-  },1000);
+    al(l,'','info');
+    al(l,'=== Same-origin Fetch 테스트 ===','info');
+    fetch(window.location.href).then(function(r){
+      al(l,'Same-origin: ✅ '+r.status,'ok');
+    }).catch(function(e){al(l,'Same-origin: ❌ '+e.message,'err')});
+  },testMimes.length*1500+500);
 
-  // 3. no download attribute
-  setTimeout(function(){
-    try{
-      var b3=new Blob(['TEST'],{type:'text/plain'});
-      var u3=URL.createObjectURL(b3);
-      al(l,'download 속성 없이 blob URL 이동 시도','info');
-      window.open(u3,'_blank');
-      al(l,'window.open(blob): 트리거됨','ok');
-    }catch(e){al(l,'window.open(blob): ❌ '+e.message,'err')}
-  },2000);
-
-  setTimeout(function(){al(l,'','info');al(l,'=== 진단 완료 ===','info')},3000);
+  setTimeout(function(){al(l,'','info');al(l,'=== 진단 완료 ===','info');al(l,'각 MIME 테스트에서 "다운로드 비활성화" 팝업이 뜬 것과 안 뜬 것을 알려주세요!','warn')},testMimes.length*1500+2000);
 }
 </script>
 </body>
