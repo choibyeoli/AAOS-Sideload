@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>APK Sideloader v4</title>
+<title>APK Sideloader v5</title>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0a0a0a;color:#e0e0e0;padding:20px;max-width:800px;margin:0 auto}
@@ -38,7 +38,7 @@
 </head>
 <body>
 
-<h1>APK Sideloader v4</h1>
+<h1>APK Sideloader v5</h1>
 <p class="sub">비발디 브라우저 다운로드 차단 우회 — 폴스타2 AAOS</p>
 
 <!-- ===== 방법 1: Intent URI ===== -->
@@ -122,6 +122,69 @@
   <div class="st" id="stW"></div>
 </div>
 
+<!-- ===== 방법 7: File System Access API ===== -->
+<div class="m">
+  <h2>방법 7: File System Access API <span class="tag t1">최우선</span></h2>
+  <p class="d">showSaveFilePicker()로 OS 파일 저장 다이얼로그 호출 — 브라우저 다운로드 필터 완전 우회</p>
+  <hr>
+  <input type="text" id="urlFS" placeholder="APK URL (same-origin 권장)">
+  <button class="bp" onclick="fsaSave()">OS 저장 다이얼로그로 저장</button>
+  <button class="bs" onclick="fsaSaveAs('apk')">APK로 저장</button>
+  <button class="bs" onclick="fsaSaveAs('bin')">BIN으로 저장 (위장)</button>
+  <div class="ptext" id="ptFS">대기 중</div>
+  <div class="pbar" id="pbFS"><div class="pfill" id="pfFS"></div></div>
+  <div class="log" id="logFS"></div>
+  <div class="st" id="stFS"></div>
+  <p class="note">💡 브라우저가 showSaveFilePicker를 지원해야 합니다. 진단 도구에서 확인하세요.</p>
+</div>
+
+<!-- ===== 방법 8: 로컬 파일 선택 + APK 변환 설치 ===== -->
+<div class="m">
+  <h2>방법 8: 로컬 파일 → APK 변환 설치 <span class="tag t1">최우선</span></h2>
+  <p class="d">블루투스로 보낸 위장 파일(files.jpg, files.pdf 등)을 선택하여 APK로 변환 후 설치 시도</p>
+  <hr>
+  <button class="bp" onclick="pickLocalFile('image')">📷 이미지 선택창으로 파일 선택</button>
+  <button class="bs" onclick="pickLocalFile('any')">📁 모든 파일 선택</button>
+  <button class="bs" onclick="pickLocalFile('pdf')">📄 PDF 선택창으로 파일 선택</button>
+  <hr>
+  <div id="localFileInfo" style="font-size:.82em;color:#aaa;margin:8px 0;display:none"></div>
+  <button class="bg" onclick="localInstallIntent()" id="btnLocalIntent" style="display:none">Intent로 설치 시도</button>
+  <button class="bg" onclick="localInstallShare()" id="btnLocalShare" style="display:none">Web Share로 설치 시도</button>
+  <button class="bg" onclick="localInstallFSA()" id="btnLocalFSA" style="display:none">APK로 저장 (File System Access)</button>
+  <button class="bw" onclick="localRenameAndOpen()" id="btnLocalRename" style="display:none">이름 바꿔서 열기 시도</button>
+  <div class="log" id="logLocal"></div>
+  <div class="st" id="stLocal"></div>
+  <p class="note">💡 블루투스로 files.jpg, files.pdf 등으로 보낸 APK를 이미지 선택창에서 골라 설치합니다.</p>
+</div>
+
+<!-- ===== 방법 9: Content URI Intent ===== -->
+<div class="m">
+  <h2>방법 9: Content URI Install <span class="tag t2">실험적</span></h2>
+  <p class="d">Blob을 content:// URI로 변환 후 패키지 설치 Intent 호출</p>
+  <hr>
+  <input type="text" id="urlCI" placeholder="APK URL (same-origin 권장)">
+  <button class="bp" onclick="contentUriInstall()">Content URI 설치</button>
+  <button class="bs" onclick="contentUriFromLocal()">로컬 파일에서 Content URI 설치</button>
+  <div class="ptext" id="ptCI">대기 중</div>
+  <div class="pbar" id="pbCI"><div class="pfill" id="pfCI"></div></div>
+  <div class="log" id="logCI"></div>
+  <div class="st" id="stCI"></div>
+</div>
+
+<!-- ===== 방법 10: OPFS 임시 저장 ===== -->
+<div class="m">
+  <h2>방법 10: OPFS + 설치 <span class="tag t2">실험적</span></h2>
+  <p class="d">Origin Private File System에 APK 저장 후 다양한 방법으로 설치 시도</p>
+  <hr>
+  <input type="text" id="urlOP" placeholder="APK URL (same-origin 권장)">
+  <button class="bp" onclick="opfsSave()">OPFS에 저장 + 설치</button>
+  <div class="ptext" id="ptOP">대기 중</div>
+  <div class="pbar" id="pbOP"><div class="pfill" id="pfOP"></div></div>
+  <div class="log" id="logOP"></div>
+  <div class="st" id="stOP"></div>
+  <p class="note">💡 Origin Private File System은 브라우저 전용 가상 파일 시스템입니다.</p>
+</div>
+
 <!-- ===== 진단 ===== -->
 <div class="m">
   <h2>진단 도구</h2>
@@ -131,6 +194,10 @@
 </div>
 
 <iframe id="hf" style="display:none" sandbox="allow-downloads allow-same-origin allow-scripts"></iframe>
+<input type="file" id="filePickImage" accept="image/*" style="display:none" onchange="handleLocalFile(this)">
+<input type="file" id="filePickAny" accept="*/*" style="display:none" onchange="handleLocalFile(this)">
+<input type="file" id="filePickPdf" accept="application/pdf,.pdf" style="display:none" onchange="handleLocalFile(this)">
+<input type="file" id="filePickCI" accept="image/*,*/*" style="display:none" onchange="handleLocalFileCI(this)">
 
 <script>
 function $(id){return document.getElementById(id)}
@@ -311,7 +378,7 @@ async function mimeTrick(){
         var bu=URL.createObjectURL(d);
         var a=document.createElement('a');a.href=bu;a.download='app'+m.ext;a.style.display='none';
         document.body.appendChild(a);a.click();document.body.removeChild(a);
-        al(log,'트리거됨. 팝업 확인','ok');
+        al(l,'트리거됨. 팝업 확인','ok');
       },i*2500);
     });
     setTimeout(function(){ss(s,'✅ 5가지 MIME 시도 완료','ok')},mimes.length*2500);
@@ -398,7 +465,7 @@ async function swIntercept(){
     var blob=await fetchWithProgress(u,'ptW','pbW','pfW',l);
     var isAPK=await verifyAPK(blob,l);
 
-    var cache=await caches.open('sw-v4');
+    var cache=await caches.open('sw-v5');
 
     // 여러 MIME으로 캐시에 저장 후 각각 시도
     var types=[
@@ -441,6 +508,438 @@ async function swIntercept(){
   }catch(e){ss(s,'❌ '+e.message,'err')}
 }
 
+// ===== 방법 7: File System Access API =====
+var _localPickedBlob=null;
+
+async function fsaSave(){
+  var u=$('urlFS').value.trim(),l=$('logFS'),s=$('stFS');
+  cl(l);if(!u){ss(s,'URL 입력','err');return}
+
+  if(!('showSaveFilePicker' in window)){
+    al(l,'showSaveFilePicker 미지원','err');
+    ss(s,'❌ 이 브라우저에서 File System Access API를 지원하지 않습니다.','err');
+    return;
+  }
+
+  try{
+    al(l,'파일 다운로드 중...','info');
+    var blob=await fetchWithProgress(u,'ptFS','pbFS','pfFS',l);
+    var isAPK=await verifyAPK(blob,l);
+
+    al(l,'OS 저장 다이얼로그 호출 중...','info');
+    var handle=await window.showSaveFilePicker({
+      suggestedName: isAPK ? 'app.apk' : 'app.bin',
+      types:[
+        {description:'APK 파일',accept:{'application/vnd.android.package-archive':['.apk']}},
+        {description:'바이너리 파일',accept:{'application/octet-stream':['.bin','.dat']}},
+        {description:'모든 파일',accept:{'application/octet-stream':['.apk','.bin','.zip','.dat']}},
+      ]
+    });
+
+    al(l,'저장 위치 선택됨: '+handle.name,'ok');
+    al(l,'FileSystemWritableFileStream으로 데이터 기록 중...','info');
+
+    var writable=await handle.createWritable();
+    await writable.write(blob);
+    await writable.close();
+
+    al(l,'✅ 파일 저장 완료! 크기: '+fb(blob.size),'ok');
+    ss(s,'✅ 파일이 스토리지에 직접 저장되었습니다! 파일 관리자에서 실행하세요.','ok');
+
+    // 저장 후 Intent로 설치 시도
+    al(l,'Intent로 설치 시도 중...','info');
+    var intents=[
+      'intent://install#Intent;scheme=package;end',
+      'intent:#Intent;action=android.intent.action.VIEW;type=application/vnd.android.package-archive;end',
+    ];
+    intents.forEach(function(uri,i){
+      setTimeout(function(){
+        al(l,'Intent 시도 '+(i+1)+': '+uri,'info');
+        try{window.location.href=uri}catch(e){al(l,'실패: '+e.message,'err')}
+      },i*2000);
+    });
+  }catch(e){
+    if(e.name==='AbortError'){
+      al(l,'사용자가 저장을 취소함','warn');
+      ss(s,'⚠️ 저장 취소됨','info');
+    }else{
+      al(l,'오류: '+e.message,'err');
+      ss(s,'❌ '+e.message,'err');
+    }
+  }
+}
+
+async function fsaSaveAs(ext){
+  var u=$('urlFS').value.trim(),l=$('logFS'),s=$('stFS');
+  cl(l);if(!u){ss(s,'URL 입력','err');return}
+
+  if(!('showSaveFilePicker' in window)){
+    al(l,'showSaveFilePicker 미지원','err');
+    ss(s,'❌ File System Access API 미지원','err');
+    return;
+  }
+
+  try{
+    var blob=await fetchWithProgress(u,'ptFS','pbFS','pfFS',l);
+    var opts={};
+    if(ext==='apk'){
+      opts={suggestedName:'app.apk',types:[{description:'APK',accept:{'application/vnd.android.package-archive':['.apk']}}]};
+    }else{
+      opts={suggestedName:'app.bin',types:[{description:'Binary',accept:{'application/octet-stream':['.bin']}}]};
+    }
+
+    var handle=await window.showSaveFilePicker(opts);
+    var writable=await handle.createWritable();
+    await writable.write(blob);
+    await writable.close();
+    al(l,'✅ '+handle.name+' 저장 완료 ('+fb(blob.size)+')','ok');
+    ss(s,'✅ 저장 완료: '+handle.name,'ok');
+  }catch(e){
+    if(e.name==='AbortError'){ss(s,'⚠️ 취소','info')}
+    else{ss(s,'❌ '+e.message,'err')}
+  }
+}
+
+// ===== 방법 8: 로컬 파일 선택 + APK 변환 설치 =====
+function pickLocalFile(mode){
+  var l=$('logLocal');cl(l);
+  if(mode==='image'){
+    al(l,'이미지 선택창 열기 (위장된 APK 파일을 선택하세요)','info');
+    $('filePickImage').click();
+  }else if(mode==='pdf'){
+    al(l,'PDF 선택창 열기','info');
+    $('filePickPdf').click();
+  }else{
+    al(l,'파일 선택창 열기','info');
+    $('filePickAny').click();
+  }
+}
+
+function handleLocalFile(input){
+  var l=$('logLocal'),s=$('stLocal');
+  if(!input.files||!input.files[0]){al(l,'파일 선택 취소','warn');return}
+
+  var file=input.files[0];
+  _localPickedBlob=file;
+
+  al(l,'선택된 파일: '+file.name,'ok');
+  al(l,'크기: '+fb(file.size)+', 타입: '+(file.type||'알 수 없음'),'info');
+
+  var info=$('localFileInfo');
+  info.style.display='block';
+  info.innerHTML='📄 <b>'+file.name+'</b> ('+fb(file.size)+')';
+
+  // APK 검증
+  var reader=new FileReader();
+  reader.onload=function(){
+    var arr=new Uint8Array(reader.result);
+    var magic=Array.from(arr.slice(0,4)).map(function(b){return b.toString(16).padStart(2,'0')}).join(' ');
+    var isAPK=(arr[0]===0x50&&arr[1]===0x4B&&arr[2]===0x03&&arr[3]===0x04);
+    al(l,'매직 바이트: '+magic+(isAPK?' ✅ APK(ZIP) 시그니처 확인!':' ⚠️ APK 시그니처 아님'),isAPK?'ok':'warn');
+
+    if(isAPK){
+      info.innerHTML+=' — <span style="color:#4caf50">✅ APK 확인됨</span>';
+      ss(s,'✅ APK 파일 확인! 아래 버튼으로 설치를 시도하세요.','ok');
+    }else{
+      info.innerHTML+=' — <span style="color:#ff9800">⚠️ APK 아닐 수 있음</span>';
+      ss(s,'⚠️ APK가 아닐 수 있습니다. 그래도 설치를 시도할 수 있습니다.','info');
+    }
+
+    // 설치 버튼들 표시
+    $('btnLocalIntent').style.display='block';
+    $('btnLocalShare').style.display='block';
+    $('btnLocalFSA').style.display='block';
+    $('btnLocalRename').style.display='block';
+  };
+  reader.readAsArrayBuffer(file.slice(0,200));
+
+  // input 초기화 (같은 파일 재선택 가능하도록)
+  input.value='';
+}
+
+async function localInstallIntent(){
+  var l=$('logLocal'),s=$('stLocal');
+  if(!_localPickedBlob){ss(s,'파일을 먼저 선택하세요','err');return}
+
+  al(l,'=== Intent 설치 시도 ===','info');
+
+  // Blob URL 생성
+  var apkBlob=new Blob([_localPickedBlob],{type:'application/vnd.android.package-archive'});
+  var burl=URL.createObjectURL(apkBlob);
+  al(l,'Blob URL: '+burl,'info');
+
+  // 다양한 Intent URI 시도
+  var intents=[
+    'intent://'+burl.replace(/^blob:/,'')+'#Intent;scheme=blob;type=application/vnd.android.package-archive;end',
+    'intent:#Intent;action=android.intent.action.VIEW;type=application/vnd.android.package-archive;end',
+    'intent:#Intent;action=android.intent.action.INSTALL_PACKAGE;end',
+  ];
+
+  // 먼저 <a> 다운로드 시도
+  al(l,'1. <a download> 트리거','info');
+  var a=document.createElement('a');a.href=burl;a.download='app.apk';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  al(l,'다운로드 트리거됨','ok');
+
+  // Intent 시도
+  intents.forEach(function(uri,i){
+    setTimeout(function(){
+      al(l,(i+2)+'. Intent: '+uri.substring(0,80)+'...','info');
+      try{window.location.href=uri;al(l,'호출됨','ok')}catch(e){al(l,'실패: '+e.message,'err')}
+    },(i+1)*2500);
+  });
+
+  ss(s,'✅ 설치 시도 중...','ok');
+}
+
+async function localInstallShare(){
+  var l=$('logLocal'),s=$('stLocal');
+  if(!_localPickedBlob){ss(s,'파일을 먼저 선택하세요','err');return}
+
+  if(!navigator.share){al(l,'Web Share API 미지원','err');ss(s,'❌ 미지원','err');return}
+
+  al(l,'=== Web Share 설치 시도 ===','info');
+
+  var attempts=[
+    {name:'app.apk',type:'application/vnd.android.package-archive'},
+    {name:'app.zip',type:'application/zip'},
+    {name:'install.apk',type:'application/octet-stream'},
+  ];
+
+  for(var i=0;i<attempts.length;i++){
+    var att=attempts[i];
+    try{
+      al(l,'공유 시도 '+(i+1)+': '+att.name+' ('+att.type+')','info');
+      var file=new File([_localPickedBlob],att.name,{type:att.type});
+      if(navigator.canShare&&navigator.canShare({files:[file]})){
+        al(l,'canShare ✅','ok');
+        await navigator.share({files:[file],title:'APK 설치'});
+        al(l,'공유 성공!','ok');
+        ss(s,'✅ 공유됨!','ok');
+        return;
+      }else{
+        al(l,'canShare ❌','warn');
+      }
+    }catch(e){al(l,'실패: '+e.message,'err')}
+  }
+  ss(s,'❌ 모든 공유 시도 실패','err');
+}
+
+async function localInstallFSA(){
+  var l=$('logLocal'),s=$('stLocal');
+  if(!_localPickedBlob){ss(s,'파일을 먼저 선택하세요','err');return}
+
+  if(!('showSaveFilePicker' in window)){
+    al(l,'showSaveFilePicker 미지원','err');
+    ss(s,'❌ File System Access API 미지원','err');
+    return;
+  }
+
+  try{
+    al(l,'=== File System Access API로 APK 저장 ===','info');
+    var handle=await window.showSaveFilePicker({
+      suggestedName:'app.apk',
+      types:[
+        {description:'APK 파일',accept:{'application/vnd.android.package-archive':['.apk']}},
+        {description:'모든 파일',accept:{'application/octet-stream':['.apk','.bin','.zip']}},
+      ]
+    });
+
+    var writable=await handle.createWritable();
+    await writable.write(_localPickedBlob);
+    await writable.close();
+
+    al(l,'✅ '+handle.name+' 저장 완료 ('+fb(_localPickedBlob.size)+')','ok');
+    ss(s,'✅ APK 파일 저장 완료! 파일 관리자에서 실행하세요.','ok');
+  }catch(e){
+    if(e.name==='AbortError'){ss(s,'⚠️ 저장 취소','info')}
+    else{ss(s,'❌ '+e.message,'err')}
+  }
+}
+
+async function localRenameAndOpen(){
+  var l=$('logLocal'),s=$('stLocal');
+  if(!_localPickedBlob){ss(s,'파일을 먼저 선택하세요','err');return}
+
+  al(l,'=== 파일 리네임 + 실행 시도 ===','info');
+
+  // 1. Blob URL로 APK 이름 지정 후 다운로드
+  var apkBlob=new Blob([_localPickedBlob],{type:'application/vnd.android.package-archive'});
+  var burl=URL.createObjectURL(apkBlob);
+
+  al(l,'1. application/vnd.android.package-archive로 <a download>','info');
+  var a=document.createElement('a');a.href=burl;a.download='app.apk';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  al(l,'트리거됨','ok');
+
+  // 2. window.open으로 blob 열기
+  await new Promise(function(r){setTimeout(r,1500)});
+  al(l,'2. window.open(blob URL)','info');
+  try{
+    var w=window.open(burl,'_blank');
+    al(l,w?'열림':'팝업 차단됨',w?'ok':'warn');
+  }catch(e){al(l,'실패: '+e.message,'err')}
+
+  // 3. location.href 이동
+  await new Promise(function(r){setTimeout(r,1500)});
+  al(l,'3. location.href = blob URL (APK MIME)','info');
+  try{window.location.href=burl;al(l,'이동 시도됨','ok')}catch(e){al(l,'실패: '+e.message,'err')}
+
+  // 4. File System Access API가 있다면 APK로 저장
+  if('showSaveFilePicker' in window){
+    al(l,'4. File System Access API로 .apk 저장 시도...','info');
+    try{
+      var handle=await window.showSaveFilePicker({
+        suggestedName:'app.apk',
+        types:[{description:'APK',accept:{'application/vnd.android.package-archive':['.apk']}}]
+      });
+      var writable=await handle.createWritable();
+      await writable.write(_localPickedBlob);
+      await writable.close();
+      al(l,'✅ '+handle.name+' 저장됨','ok');
+    }catch(e){
+      if(e.name!=='AbortError') al(l,'실패: '+e.message,'err');
+    }
+  }
+
+  ss(s,'✅ 모든 시도 완료','ok');
+}
+
+// ===== 방법 9: Content URI Install =====
+async function contentUriInstall(){
+  var u=$('urlCI').value.trim(),l=$('logCI'),s=$('stCI');
+  cl(l);if(!u){ss(s,'URL 입력','err');return}
+
+  try{
+    var blob=await fetchWithProgress(u,'ptCI','pbCI','pfCI',l);
+    var isAPK=await verifyAPK(blob,l);
+
+    al(l,'=== Content URI + Intent 설치 시도 ===','info');
+    await tryContentUriInstall(blob,l,s);
+  }catch(e){ss(s,'❌ '+e.message,'err')}
+}
+
+function contentUriFromLocal(){
+  $('filePickCI').click();
+}
+
+function handleLocalFileCI(input){
+  var l=$('logCI'),s=$('stCI');
+  cl(l);
+  if(!input.files||!input.files[0]){return}
+
+  var file=input.files[0];
+  al(l,'선택된 파일: '+file.name+' ('+fb(file.size)+')','ok');
+  verifyAPK(file,l).then(function(){
+    tryContentUriInstall(file,l,s);
+  });
+  input.value='';
+}
+
+async function tryContentUriInstall(blob,l,s){
+  // Blob URL 기반 다양한 Intent 시도
+  var apkBlob=new Blob([blob],{type:'application/vnd.android.package-archive'});
+  var blobUrl=URL.createObjectURL(apkBlob);
+
+  var intents=[
+    // data URI가 아닌 blob URL을 사용한 Intent
+    {n:'VIEW + APK MIME',u:'intent://view#Intent;scheme=content;type=application/vnd.android.package-archive;end'},
+    {n:'INSTALL_PACKAGE',u:'intent:#Intent;action=android.intent.action.INSTALL_PACKAGE;type=application/vnd.android.package-archive;end'},
+    {n:'VIEW + data blob',u:'intent://'+blobUrl.replace(/^blob:/,'')+'#Intent;scheme=blob;action=android.intent.action.VIEW;type=application/vnd.android.package-archive;end'},
+    {n:'PackageInstaller direct',u:'intent:#Intent;action=android.intent.action.INSTALL_PACKAGE;component=com.google.android.packageinstaller/com.android.packageinstaller.InstallStaging;end'},
+    {n:'PM Install',u:'intent:#Intent;action=android.intent.action.INSTALL_PACKAGE;component=com.android.packageinstaller/.InstallStaging;end'},
+  ];
+
+  for(var i=0;i<intents.length;i++){
+    var it=intents[i];
+    al(l,(i+1)+'. '+it.n,'info');
+    al(l,it.u.substring(0,100)+'...','info');
+    try{
+      window.location.href=it.u;
+      al(l,'호출됨 — 반응 대기','ok');
+    }catch(e){al(l,'실패: '+e.message,'err')}
+    await new Promise(function(r){setTimeout(r,2500)});
+  }
+  ss(s,'✅ 모든 Intent 시도 완료','ok');
+}
+
+// ===== 방법 10: OPFS =====
+async function opfsSave(){
+  var u=$('urlOP').value.trim(),l=$('logOP'),s=$('stOP');
+  cl(l);if(!u){ss(s,'URL 입력','err');return}
+
+  if(!navigator.storage||!navigator.storage.getDirectory){
+    al(l,'OPFS 미지원','err');
+    ss(s,'❌ Origin Private File System 미지원','err');
+    return;
+  }
+
+  try{
+    var blob=await fetchWithProgress(u,'ptOP','pbOP','pfOP',l);
+    var isAPK=await verifyAPK(blob,l);
+
+    al(l,'OPFS에 파일 저장 중...','info');
+    var root=await navigator.storage.getDirectory();
+
+    // OPFS에 파일 생성
+    var fileHandle=await root.getFileHandle('app.apk',{create:true});
+    var writable=await fileHandle.createWritable();
+    await writable.write(blob);
+    await writable.close();
+    al(l,'OPFS 저장 완료: app.apk ('+fb(blob.size)+')','ok');
+
+    // OPFS에서 파일 읽기
+    al(l,'OPFS에서 파일 읽기...','info');
+    var savedFile=await fileHandle.getFile();
+    al(l,'읽기 완료: '+savedFile.name+' ('+fb(savedFile.size)+')','ok');
+
+    // Blob URL 생성 후 다양한 방법으로 설치 시도
+    var apkBlob=new Blob([savedFile],{type:'application/vnd.android.package-archive'});
+    var burl=URL.createObjectURL(apkBlob);
+
+    // 1. <a download>
+    al(l,'1. <a download> 시도','info');
+    var a=document.createElement('a');a.href=burl;a.download='app.apk';
+    document.body.appendChild(a);a.click();document.body.removeChild(a);
+    al(l,'트리거됨','ok');
+
+    await new Promise(function(r){setTimeout(r,2000)});
+
+    // 2. Web Share
+    if(navigator.share){
+      al(l,'2. Web Share 시도','info');
+      try{
+        var file=new File([savedFile],'app.apk',{type:'application/vnd.android.package-archive'});
+        if(navigator.canShare&&navigator.canShare({files:[file]})){
+          await navigator.share({files:[file],title:'APK 설치'});
+          al(l,'공유 성공!','ok');
+        }else{
+          al(l,'canShare ❌','warn');
+        }
+      }catch(e){al(l,'공유 실패: '+e.message,'err')}
+    }
+
+    // 3. showSaveFilePicker로 OPFS→로컬 복사
+    if('showSaveFilePicker' in window){
+      al(l,'3. File System Access API로 로컬 저장 시도','info');
+      try{
+        var localHandle=await window.showSaveFilePicker({
+          suggestedName:'app.apk',
+          types:[{description:'APK',accept:{'application/vnd.android.package-archive':['.apk']}}]
+        });
+        var localWritable=await localHandle.createWritable();
+        await localWritable.write(savedFile);
+        await localWritable.close();
+        al(l,'✅ 로컬 저장 완료: '+localHandle.name,'ok');
+      }catch(e){
+        if(e.name!=='AbortError') al(l,'실패: '+e.message,'err');
+      }
+    }
+
+    ss(s,'✅ OPFS 저장 + 설치 시도 완료','ok');
+  }catch(e){ss(s,'❌ '+e.message,'err')}
+}
+
 // ===== 진단 =====
 async function runDiag(){
   var l=$('logDiag');cl(l);
@@ -458,7 +957,15 @@ async function runDiag(){
    ['Web Share',!!navigator.share],
    ['canShare',!!navigator.canShare],
    ['showSaveFilePicker','showSaveFilePicker' in window],
+   ['showOpenFilePicker','showOpenFilePicker' in window],
+   ['showDirectoryPicker','showDirectoryPicker' in window],
+   ['OPFS (navigator.storage.getDirectory)',!!(navigator.storage&&navigator.storage.getDirectory)],
+   ['File',typeof File!=='undefined'],
+   ['FileReader',typeof FileReader!=='undefined'],
+   ['FileSystemWritableFileStream','FileSystemWritableFileStream' in window],
    ['Web USB','usb' in navigator],
+   ['Clipboard API',!!navigator.clipboard],
+   ['DataTransfer',typeof DataTransfer!=='undefined'],
   ].forEach(function(c){al(l,c[0]+': '+(c[1]?'✅':'❌'),c[1]?'ok':'err')});
 
   al(l,'','info');
