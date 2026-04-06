@@ -442,13 +442,13 @@ async function webShare(){
         var file=new File([blob],a.name,{type:a.type});
         if(navigator.canShare&&navigator.canShare({files:[file]})){
           al(l,'canShare ✅','ok');
-          await navigator.share({files:[file],title:'Install'});
-          al(l,'공유 성공!','ok');
-          ss(s,'✅ 공유됨!','ok');
-          return;
         }else{
-          al(l,'canShare ❌ 이 형식 불가','warn');
+          al(l,'canShare ❌ 이 형식 불가 — 그래도 share 시도','warn');
         }
+        await navigator.share({files:[file],title:'Install'});
+        al(l,'공유 성공!','ok');
+        ss(s,'✅ 공유됨!','ok');
+        return;
       }catch(e){al(l,'실패: '+e.message,'err')}
     }
     ss(s,'❌ 모든 형식 공유 불가','err');
@@ -713,13 +713,13 @@ async function localInstallShare(){
       var file=new File([_localPickedBlob],att.name,{type:att.type});
       if(navigator.canShare&&navigator.canShare({files:[file]})){
         al(l,'canShare ✅','ok');
-        await navigator.share({files:[file],title:'APK 설치'});
-        al(l,'공유 성공!','ok');
-        ss(s,'✅ 공유됨!','ok');
-        return;
       }else{
-        al(l,'canShare ❌','warn');
+        al(l,'canShare ❌ — 그래도 share 시도','warn');
       }
+      await navigator.share({files:[file],title:'APK 설치'});
+      al(l,'공유 성공!','ok');
+      ss(s,'✅ 공유됨!','ok');
+      return;
     }catch(e){al(l,'실패: '+e.message,'err')}
   }
   ss(s,'❌ 모든 공유 시도 실패','err');
@@ -911,11 +911,13 @@ async function opfsSave(){
       try{
         var file=new File([savedFile],'app.apk',{type:'application/vnd.android.package-archive'});
         if(navigator.canShare&&navigator.canShare({files:[file]})){
-          await navigator.share({files:[file],title:'APK 설치'});
-          al(l,'공유 성공!','ok');
+          al(l,'canShare ✅','ok');
         }else{
-          al(l,'canShare ❌','warn');
+          al(l,'canShare ❌ — 그래도 share 시도','warn');
         }
+        await navigator.share({files:[file],title:'APK 설치'});
+        al(l,'공유 성공!','ok');
+        ss(s,'✅ 공유됨!','ok');
       }catch(e){al(l,'공유 실패: '+e.message,'err')}
     }
 
