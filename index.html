@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>APK Sideloader for AAOS</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #0a0a0a;
+    color: #e0e0e0;
+    padding: 20px;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+  h1 {
+    font-size: 1.4em;
+    margin-bottom: 8px;
+    color: #fff;
+  }
+  .subtitle {
+    color: #888;
+    font-size: 0.85em;
+    margin-bottom: 24px;
+  }
+  .method {
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  .method h2 {
+    font-size: 1.1em;
+    color: #4fc3f7;
+    margin-bottom: 4px;
+  }
+  .method .desc {
+    font-size: 0.8em;
+    color: #999;
+    margin-bottom: 16px;
+  }
+  input[type="text"], input[type="file"] {
+    width: 100%;
+    padding: 12px;
+    background: #111;
+    border: 1px solid #444;
+    border-radius: 8px;
+    color: #fff;
+    font-size: 0.9em;
+    margin-bottom: 12px;
+  }
+  input[type="text"]::placeholder { color: #666; }
+  button {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.95em;
+    font-weight: 600;
+    cursor: pointer;
+    width: 100%;
+    margin-bottom: 8px;
+  }
+  .btn-primary {
+    background: #1976d2;
+    color: #fff;
+  }
+  .btn-primary:active { background: #1565c0; }
+  .btn-secondary {
+    background: #333;
+    color: #ccc;
+  }
+  .btn-success {
+    background: #2e7d32;
+    color: #fff;
+  }
+  .status {
+    padding: 10px;
+    border-radius: 8px;
+    font-size: 0.85em;
+    margin-top: 8px;
+    display: none;
+  }
+  .status.show { display: block; }
+  .status.info { background: #0d47a1; color: #bbdefb; }
+  .status.error { background: #b71c1c; color: #ffcdd2; }
+  .status.success { background: #1b5e20; color: #c8e6c9; }
+  .progress {
+    width: 100%;
+    height: 6px;
+    background: #333;
+    border-radius: 3px;
+    margin-top: 8px;
+    display: none;
+  }
+  .progress.show { display: block; }
+  .progress-bar {
+    height: 100%;
+    background: #4fc3f7;
+    border-radius: 3px;
+    width: 0%;
+    transition: width 0.3s;
+  }
+  .divider {
+    border: none;
+    border-top: 1px solid #222;
+    margin: 8px 0 16px;
+  }
+  .tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.7em;
+    font-weight: 600;
+    margin-left: 8px;
+    vertical-align: middle;
+  }
+  .tag-best { background: #2e7d32; color: #a5d6a7; }
+  .tag-experimental { background: #e65100; color: #ffcc80; }
+  .note {
+    font-size: 0.75em;
+    color: #777;
+    margin-top: 8px;
+    line-height: 1.4;
+  }
+</style>
+</head>
+<body>
+
+<h1>APK Sideloader for AAOS</h1>
+<p class="subtitle">폴스타2 브라우저 다운로드 차단 우회 도구</p>
+
+<!-- 방법 1: Blob Fetch -->
+<div class="method">
+  <h2>방법 1: Blob Fetch <span class="tag tag-best">추천</span></h2>
+  <p class="desc">URL에서 APK를 메모리로 받은 뒤 다운로드를 강제 트리거합니다</p>
+  <hr class="divider">
+  <input type="text" id="url1" placeholder="APK 직접 다운로드 URL 입력">
+  <button class="btn-primary" onclick="method1()">다운로드 시도</button>
+  <button class="btn-secondary" onclick="method1_open()">다운로드 대신 바로 열기 시도</button>
+  <div class="progress" id="prog1"><div class="progress-bar" id="progbar1"></div></div>
+  <div class="status" id="status1"></div>
+  <p class="note">* Google Drive 공유 링크: https://drive.google.com/uc?export=download&id=파일ID</p>
+</div>
+
+<!-- 방법 2: Base64 Data URI -->
+<div class="method">
+  <h2>방법 2: Base64 Data URI <span class="tag tag-experimental">실험적</span></h2>
+  <p class="desc">PC에서 APK를 base64로 변환한 텍스트를 붙여넣어 설치합니다</p>
+  <hr class="divider">
+  
+  <p style="font-size:0.8em; color:#aaa; margin-bottom:12px;">
+    PC 터미널에서 먼저 실행:<br>
+    <code style="color:#4fc3f7; background:#111; padding:2px 6px; border-radius:4px;">
+      base64 -w 0 app.apk | pbcopy
+    </code><br>
+    (Mac) 또는
+    <code style="color:#4fc3f7; background:#111; padding:2px 6px; border-radius:4px;">
+      base64 -w 0 app.apk > out.txt
+    </code>
+    (Linux)
+  </p>
+
+  <!-- 방법 2-A: 직접 붙여넣기 (작은 파일용) -->
+  <textarea id="base64input" rows="4" placeholder="base64 인코딩된 APK 텍스트를 여기에 붙여넣기 (소형 APK용, ~2MB 이하)"
+    style="width:100%; padding:12px; background:#111; border:1px solid #444; border-radius:8px; color:#fff; font-size:0.85em; margin-bottom:12px; resize:vertical;"></textarea>
+  <button class="btn-primary" onclick="method2_paste()">붙여넣기에서 설치</button>
+
+  <p style="font-size:0.8em; color:#666; text-align:center; margin: 12px 0;">— 또는 —</p>
+
+  <!-- 방법 2-B: URL에서 base64 텍스트 파일 로드 -->
+  <input type="text" id="base64url" placeholder="base64 텍스트 파일 URL (GitHub raw 등)">
+  <button class="btn-secondary" onclick="method2_url()">URL에서 base64 로드 후 설치</button>
+
+  <div class="status" id="status2"></div>
+  <p class="note">* 큰 APK는 base64 텍스트 파일을 GitHub에 올리고 raw URL을 사용하세요</p>
+</div>
+
+<!-- 방법 4: Service Worker Cache -->
+<div class="method">
+  <h2>방법 3: Service Worker Cache <span class="tag tag-experimental">실험적</span></h2>
+  <p class="desc">Service Worker가 백그라운드로 캐시에 APK를 저장한 뒤 설치를 시도합니다</p>
+  <hr class="divider">
+  <input type="text" id="url4" placeholder="APK 직접 다운로드 URL 입력">
+  <button class="btn-primary" onclick="method4_register()">1단계: 캐시에 저장</button>
+  <button class="btn-success" onclick="method4_install()" id="btn4install" style="display:none">2단계: 설치 시도</button>
+  <div class="status" id="status4"></div>
+  <p class="note">* CORS 허용된 URL이어야 합니다. 안 되면 방법 1을 먼저 시도하세요</p>
+</div>
+
+<!-- 추가: intent URI 시도 -->
+<div class="method">
+  <h2>보너스: Intent URI 직접 호출</h2>
+  <p class="desc">안드로이드 패키지 설치 인텐트를 브라우저에서 직접 호출합니다</p>
+  <hr class="divider">
+  <input type="text" id="urlIntent" placeholder="APK 직접 다운로드 URL 입력">
+  <button class="btn-secondary" onclick="tryIntent()">Intent 호출 시도</button>
+  <div class="status" id="statusIntent"></div>
+</div>
+
+<script>
+// ============ 방법 1: Blob Fetch ============
+async function method1() {
+  const url = document.getElementById('url1').value.trim();
+  const status = document.getElementById('status1');
+  const prog = document.getElementById('prog1');
+  const progbar = document.getElementById('progbar1');
+
+  if (!url) { showStatus(status, '⚠️ URL을 입력하세요', 'error'); return; }
+
+  showStatus(status, '⏳ 다운로드 중...', 'info');
+  prog.classList.add('show');
+
+  try {
+    const response = await fetch(url, { mode: 'cors' });
+    if (!response.ok) throw new Error('HTTP ' + response.status);
+
+    const reader = response.body.getReader();
+    const contentLength = response.headers.get('Content-Length');
+    const total = contentLength ? parseInt(contentLength) : 0;
+    let received = 0;
+    const chunks = [];
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      chunks.push(value);
+      received += value.length;
+      if (total > 0) {
+        const pct = Math.round((received / total) * 100);
+        progbar.style.width = pct + '%';
+      }
+    }
+
+    const blob = new Blob(chunks, { type: 'application/vnd.android.package-archive' });
+    const blobUrl = URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = blobUrl;
+    a.download = 'app.apk';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+
+    showStatus(status, '✅ 다운로드 트리거 완료! (' + formatBytes(received) + ') 설치 프롬프트가 뜨는지 확인하세요', 'success');
+
+    // 약간의 딜레이 후 직접 열기도 시도
+    setTimeout(() => {
+      window.open(blobUrl, '_blank');
+    }, 1000);
+
+  } catch (e) {
+    showStatus(status, '❌ 실패: ' + e.message + ' (CORS 문제일 수 있음. Google Drive나 Dropbox 링크 시도해보세요)', 'error');
+    prog.classList.remove('show');
+  }
+}
+
+// 방법 1 변형: 다운로드 대신 바로 열기
+async function method1_open() {
+  const url = document.getElementById('url1').value.trim();
+  const status = document.getElementById('status1');
+
+  if (!url) { showStatus(status, '⚠️ URL을 입력하세요', 'error'); return; }
+
+  showStatus(status, '⏳ 파일 로드 중...', 'info');
+
+  try {
+    const response = await fetch(url, { mode: 'cors' });
+    const blob = await response.blob();
+    const blobUrl = URL.createObjectURL(
+      new Blob([blob], { type: 'application/vnd.android.package-archive' })
+    );
+
+    // 현재 창에서 바로 열기
+    window.location.href = blobUrl;
+
+    showStatus(status, '✅ 파일 열기 시도 완료', 'success');
+  } catch (e) {
+    // fetch 실패 시 직접 링크로 이동
+    showStatus(status, '⚠️ fetch 실패, 직접 이동 시도 중...', 'info');
+    window.location.href = url;
+  }
+}
+
+// ============ 방법 2: Base64 ============
+function method2_paste() {
+  const b64 = document.getElementById('base64input').value.trim();
+  const status = document.getElementById('status2');
+
+  if (!b64) { showStatus(status, '⚠️ base64 텍스트를 붙여넣으세요', 'error'); return; }
+
+  showStatus(status, '⏳ 변환 중...', 'info');
+
+  try {
+    const byteChars = atob(b64);
+    const byteArray = new Uint8Array(byteChars.length);
+    for (let i = 0; i < byteChars.length; i++) {
+      byteArray[i] = byteChars.charCodeAt(i);
+    }
+    const blob = new Blob([byteArray], { type: 'application/vnd.android.package-archive' });
+    triggerBlobDownload(blob, status);
+  } catch (e) {
+    showStatus(status, '❌ base64 디코딩 실패: ' + e.message, 'error');
+  }
+}
+
+async function method2_url() {
+  const url = document.getElementById('base64url').value.trim();
+  const status = document.getElementById('status2');
+
+  if (!url) { showStatus(status, '⚠️ URL을 입력하세요', 'error'); return; }
+
+  showStatus(status, '⏳ base64 파일 로드 중...', 'info');
+
+  try {
+    const response = await fetch(url);
+    const b64 = (await response.text()).trim();
+
+    const byteChars = atob(b64);
+    const byteArray = new Uint8Array(byteChars.length);
+    for (let i = 0; i < byteChars.length; i++) {
+      byteArray[i] = byteChars.charCodeAt(i);
+    }
+    const blob = new Blob([byteArray], { type: 'application/vnd.android.package-archive' });
+    triggerBlobDownload(blob, status);
+  } catch (e) {
+    showStatus(status, '❌ 실패: ' + e.message, 'error');
+  }
+}
+
+function triggerBlobDownload(blob, status) {
+  const blobUrl = URL.createObjectURL(blob);
+
+  // 방법 A: <a> download
+  const a = document.createElement('a');
+  a.href = blobUrl;
+  a.download = 'app.apk';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+
+  // 방법 B: window.open
+  setTimeout(() => window.open(blobUrl, '_blank'), 500);
+
+  // 방법 C: location.href
+  setTimeout(() => {
+    window.location.href = blobUrl;
+  }, 1500);
+
+  showStatus(status, '✅ 3가지 방식으로 설치 트리거 시도 완료 (' + formatBytes(blob.size) + ')', 'success');
+}
+
+// ============ 방법 4: Service Worker ============
+async function method4_register() {
+  const url = document.getElementById('url4').value.trim();
+  const status = document.getElementById('status4');
+
+  if (!url) { showStatus(status, '⚠️ URL을 입력하세요', 'error'); return; }
+
+  if (!('serviceWorker' in navigator)) {
+    showStatus(status, '❌ 이 브라우저는 Service Worker를 지원하지 않습니다', 'error');
+    return;
+  }
+
+  showStatus(status, '⏳ 캐시에 APK 저장 중...', 'info');
+
+  try {
+    // SW 대신 Cache API 직접 사용
+    const cache = await caches.open('apk-store');
+
+    const response = await fetch(url, { mode: 'cors' });
+    if (!response.ok) throw new Error('HTTP ' + response.status);
+
+    await cache.put('apk-file', response);
+
+    showStatus(status, '✅ 캐시 저장 완료! 2단계 버튼을 누르세요', 'success');
+    document.getElementById('btn4install').style.display = 'block';
+  } catch (e) {
+    showStatus(status, '❌ 캐시 저장 실패: ' + e.message, 'error');
+  }
+}
+
+async function method4_install() {
+  const status = document.getElementById('status4');
+
+  try {
+    const cache = await caches.open('apk-store');
+    const response = await cache.match('apk-file');
+
+    if (!response) {
+      showStatus(status, '❌ 캐시에 파일이 없습니다. 1단계를 먼저 실행하세요', 'error');
+      return;
+    }
+
+    const blob = await response.blob();
+    const blobUrl = URL.createObjectURL(
+      new Blob([blob], { type: 'application/vnd.android.package-archive' })
+    );
+
+    const a = document.createElement('a');
+    a.href = blobUrl;
+    a.download = 'app.apk';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+
+    setTimeout(() => window.location.href = blobUrl, 1000);
+
+    showStatus(status, '✅ 설치 트리거 완료!', 'success');
+  } catch (e) {
+    showStatus(status, '❌ 실패: ' + e.message, 'error');
+  }
+}
+
+// ============ 보너스: Intent URI ============
+function tryIntent() {
+  const url = document.getElementById('urlIntent').value.trim();
+  const status = document.getElementById('statusIntent');
+
+  if (!url) { showStatus(status, '⚠️ URL을 입력하세요', 'error'); return; }
+
+  // 안드로이드 intent URI 형식
+  const intentUri = 'intent://' + url.replace(/^https?:\/\//, '') +
+    '#Intent;scheme=https;type=application/vnd.android.package-archive;end';
+
+  showStatus(status, '⏳ Intent URI 호출 시도 중...', 'info');
+
+  try {
+    window.location.href = intentUri;
+    setTimeout(() => {
+      // content:// URI 방식도 시도
+      window.location.href = 'content://downloads/my_downloads';
+    }, 2000);
+    showStatus(status, '✅ Intent 호출 시도 완료. 반응이 없으면 이 방법은 차단된 겁니다.', 'success');
+  } catch (e) {
+    showStatus(status, '❌ Intent 호출 실패: ' + e.message, 'error');
+  }
+}
+
+// ============ 유틸리티 ============
+function showStatus(el, msg, type) {
+  el.textContent = msg;
+  el.className = 'status show ' + type;
+}
+
+function formatBytes(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / 1048576).toFixed(1) + ' MB';
+}
+</script>
+
+</body>
+</html>
